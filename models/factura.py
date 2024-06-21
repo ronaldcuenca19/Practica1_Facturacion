@@ -11,9 +11,18 @@ class Factura(db.Model):
     persona = db.relationship('Persona', backref=db.backref('facturas', lazy=True))
 
     def serialize(self):
+        nombre_cliente = ""
+        if self.persona:
+            nombre_cliente = self.persona.nombre + ' ' + self.persona.apellido
+
+        nombre_cedula = ""
+        if self.persona:
+            nombre_cedula = self.persona.cedula
         return  {
             'fecha': self.fecha,
             'total': self.total,
             'numero_factura': self.numero_factura,
             'external': self.external_id,
+            'cliente': nombre_cliente,
+            'cedula': nombre_cedula
         }

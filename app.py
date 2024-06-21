@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 import pymysql
 
 pymysql.install_as_MySQLdb()
@@ -10,6 +11,7 @@ db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__, instance_relative_config=False)
+    CORS(app)
     #TODO
     app.config.from_object('config.config.Config')
     db.init_app(app)

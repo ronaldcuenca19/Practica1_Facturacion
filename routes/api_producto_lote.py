@@ -4,6 +4,13 @@ from controller.productoControl import ProductoControl
 from flask_expects_json import expects_json
 from controller.authenticate import token_required
 from controller.utiles.errores import Errors
+from werkzeug.utils import secure_filename
+import os
+
+def archivosPerm(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ProductoControl.ALLOWED_EXTENSIONS
+    
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 api_producto_lote = Blueprint('api_producto_lote', __name__)
 loteC = LoteControl()
@@ -37,6 +44,24 @@ schema_lote_producto = {
     "required": ["cantidad", "id_lote", "id_producto",'fecha_caducidad'],
 }
 
+schema_producto_foto = {
+    "type": "object",
+    "properties": {
+        "external_id": {'type': 'string'}, 
+    },
+    "required": ["external_id"],
+}
+
+schema_producto_2 = {
+    "type": "object",
+    "properties": {
+        "nombre": {'type': 'string'}, 
+        "precio": {'type': 'number'},
+        "external_id": {'type': 'string'}
+    },
+    "required": ["nombre", "precio", "external_id"],
+}
+
 @api_producto_lote.route('/lote/save', methods=["POST"])
 @token_required
 @expects_json(schema_lote)
@@ -59,6 +84,35 @@ def create_producto():
         jsonify({"msg":"OK", "code":200, "data": producto_id}),
         200,
     )
+
+@api_producto_lote.route('/foto/producto', methods=["POST"])
+@token_required
+def create_foto_producto():
+    if 'file' not in request.files:
+        return make_response(jsonify({"msg": "Sin parte del archivo para la petición"}), 400)
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return make_response(jsonify({"msg": "Ningún archivo para subir"}), 400)
+
+    if file and archivosPerm(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join('static/product_gallery', filename)
+        file.save(file_path)
+
+        external_id = request.form.get('external')
+
+        producto_id = productoC.guardarImage(external_id, filename)
+        if producto_id:
+            return make_response(
+                jsonify({"msg": "OK", "code": 200, "data": producto_id}),
+                200
+            )
+        else:
+            return make_response(jsonify({"msg": "Producto no encontrado", "code": 404}), 404)
+
+    return make_response(jsonify({"msg": "Archivo no permitido", "code": 400}), 400)
    
 @api_producto_lote.route('/lote_producto/save', methods=["POST"])
 @token_required
@@ -101,7 +155,28 @@ def create_lote_producto():
         )
 
 
+@api_producto_lote.route('/producto/update', methods=["POST"])
+@token_required
+@expects_json(schema_producto_2)
+def update_producto():
+    data = request.json
+    person_id = productoC.editarProducto (data)
+    if person_id != -8:
+        return make_response(
+            jsonify({"msg":"OK", "code":200, "data": person_id}),
+            200,
+        )
+    else:
+        return make_response(
+            jsonify(
+                {"msg":"Error", "code":401, "data": {"error": Errors.error[str(-8)]}}
+            ),
+            401,
+        )
+
+
 @api_producto_lote.route("/lote", methods=["GET"])
+@token_required
 def listLote():
     datos_lote = loteC.listar()
     
@@ -111,6 +186,7 @@ def listLote():
     )
 
 @api_producto_lote.route("/producto", methods=["GET"])
+@token_required
 def listProducto():
     datos_producto = productoC.listar()
     
@@ -118,6 +194,28 @@ def listProducto():
         jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_producto])}),
         200
     )
+
+
+@api_producto_lote.route("/producto/<external>",  methods=["GET"])
+def list_obtener(external):
+    # Aquí se obtiene el parámetro 'external' de la URL y se pasa a la función 'listarPersona'
+    datos_persona = productoC.obtenerProducto(external)
+    
+    # Se verifica si se encontró una persona con el external_id dado
+    if datos_persona:
+        # Si se encuentra la persona, se serializan los datos y se incluyen en la respuesta
+        serialized_data = datos_persona.serialize()
+        response_data = {
+            "msg": "OK",
+            "code": 200,
+            "datos": serialized_data
+        }
+        # Se devuelve la respuesta en formato JSON con el código de estado HTTP 200
+        return make_response(jsonify(response_data), 200)
+    else:
+        # Si no se encuentra la persona, se devuelve un mensaje de error con el código de estado HTTP 404
+        return make_response(jsonify({"error": "No se encontró la persona"}), 404)
+    
 
 @api_producto_lote.route("/lote_producto", methods=["GET"])
 @token_required

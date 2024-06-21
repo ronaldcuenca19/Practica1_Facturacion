@@ -8,6 +8,7 @@ class Producto(db.Model):
     stock = db.Column(db.Integer)
     precio = db.Column(db.Float)
     nombre = db.Column(db.String(100))
+    foto = db.Column(db.String(100))
 
     def get_copy(self):
         return deepcopy(self)
@@ -17,6 +18,7 @@ class Producto(db.Model):
             'stock': self.stock,
             'precio': self.precio,
             'nombre': self.nombre,
+            'foto': self.foto,
             'external_id':self.external_id,
         }
 

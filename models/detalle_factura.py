@@ -21,10 +21,25 @@ class Detalle_Factura(db.Model):
         if self.factura:
             nombre_factura = self.factura.numero_factura
 
+        cliente_factura = ""
+        if self.factura.persona:
+            cliente_factura = self.factura.persona.nombre + " " + self.factura.persona.apellido
+
+        cliente_cedula = ""
+        if self.factura.persona:
+            cliente_cedula = self.factura.persona.cedula
+
+        total_factura = ""
+        if self.factura:
+            total_factura = self.factura.total
+
         return  {
             'cantidad': self.cantidad,
             'total_producto': self.total_producto,
             'external': self.external_id,
             'producto': nombre_producto,
-            'factura':nombre_factura
+            'factura':nombre_factura,
+            'cliente': cliente_factura,
+            'cedula': cliente_cedula,
+            'total': total_factura
         }

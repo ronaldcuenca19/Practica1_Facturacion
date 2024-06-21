@@ -13,8 +13,9 @@ import uuid
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import current_app
-from controller.utiles.errores import Errors
+from flask import current_app, request
+from werkzeug.utils import secure_filename
+import os
 
 class PersonaControl:
 
@@ -23,10 +24,10 @@ class PersonaControl:
         if accountA:
             #decrypt password
             if check_password_hash(accountA.clave, data["clave"]):
-                expire_time = datetime.now() + timedelta(minutes=90)
+                expire_time = datetime.now() + timedelta(minutes=30)
                 token_payload = {
                     "external_id": accountA.external_id,
-                    "expire": expire_time.strftime("%Y-%m-%d %H:%M:%S") 
+                    "exp": expire_time.timestamp() 
                 }
                 print('-------------', token_payload)
                 token = jwt.encode(
@@ -45,6 +46,20 @@ class PersonaControl:
         else:
             return -6
         
+    def archivosPerm(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in PersonaControl.ALLOWED_EXTENSIONS
+    
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    
+    def guardarImage(self, external_id, filename):
+        persona = Persona.query.filter_by(external_id=external_id).first()
+        if persona:
+            persona.foto = filename
+            db.session.commit()
+            return persona.id
+        else:
+            return None
+
     def guardarFacturador(self, data):
         roles2 = Rol.query.filter_by(nombre=("Facturador")).first()
         contraseña_sin_hashear = data.get("clave")
@@ -56,6 +71,7 @@ class PersonaControl:
         persona.edad = data.get("edad")
         persona.external_id = uuid.uuid4()
         persona.estado = data.get("estado")
+        persona.foto = ("profile.jpg")
         persona.id_rol = roles2.id
         cuenta = Cuenta()
         cuenta.correo = data.get("correo")
@@ -91,6 +107,7 @@ class PersonaControl:
         persona.external_id = uuid.uuid4()
         persona.estado = data.get("estado")
         persona.cedula = data.get("cedula")
+        persona.foto = ("profile.jpg")
         persona.id_rol = roles2.id
         if not PersonaControl.validar_cedula(persona.cedula):
             db.session.rollback()
@@ -98,6 +115,22 @@ class PersonaControl:
         db.session.add(persona)
         db.session.commit()
         return persona.id
+    
+    def editarCliente(self, data):
+        censAUx = Persona.get_copy 
+        censador2 = Persona.query.filter_by(external_id=data.get("external_id")).first()
+        censAUx = censador2
+        censAUx.apellido = data.get("apellidos")
+        censAUx.nombre = data.get("nombres")
+        censAUx.edad = data.get("edad")
+        censAUx.estado = data.get("estado")
+        censAUx.cedula = data.get("cedula")
+        if not PersonaControl.validar_cedula(censAUx.cedula):
+            db.session.rollback()
+            return -8
+        db.session.merge(censAUx)
+        db.session.commit()
+        return censAUx.id
 
 
 
@@ -117,6 +150,13 @@ class PersonaControl:
 
     def listar(self):
         return Persona.query.all()
+    
+    def obtenerCliente(self, external):
+        return Persona.query.filter_by(external_id = external).first()
+    
+    def listarCliente(self):
+        roles2 = Rol.query.filter_by(nombre=("Cliente")).first()
+        return Persona.query.filter_by(id_rol=roles2.id).all()
     
     
 

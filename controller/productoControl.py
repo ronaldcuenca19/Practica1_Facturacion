@@ -4,15 +4,31 @@ from models.lote import Lote
 from app import db
 import uuid
 from datetime import datetime, timedelta
-import schedule
-import time
+from flask import current_app, request
+from werkzeug.utils import secure_filename
+import os
 
 class ProductoControl:
+    def archivosPerm(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ProductoControl.ALLOWED_EXTENSIONS
+    
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+    
+    def guardarImage(self, external_id, filename):
+        producto = Producto.query.filter_by(external_id=external_id).first()
+        if producto:
+            producto.foto = filename
+            db.session.commit()
+            return producto.id
+        else:
+            return None
+
     def guardarProducto(self, data):
         producto = Producto()
         producto.stock = 0
         producto.precio = data.get("precio")
         producto.nombre = data.get("nombre")
+        producto.foto = "producto.png"
         producto.external_id = uuid.uuid4()
         db.session.add(producto)
         db.session.commit()
@@ -144,6 +160,20 @@ class ProductoControl:
     
     def listarLote_Producto_Caducado(self):
         return Lote_Producto.query.filter_by(estado='Caducado').all()
+    
+
+    def editarProducto(self, data):
+        censAUx = Producto.get_copy 
+        censador2 = Producto.query.filter_by(external_id=data.get("external_id")).first()
+        censAUx = censador2
+        censAUx.nombre = data.get("nombre")
+        censAUx.precio = data.get("precio")
+        db.session.merge(censAUx)
+        db.session.commit()
+        return censAUx.id
+    
+    def obtenerProducto(self, external):
+        return Producto.query.filter_by(external_id = external).first()
 
 
 

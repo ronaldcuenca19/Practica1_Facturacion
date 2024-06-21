@@ -76,6 +76,16 @@ def listLote_Producto():
         200
     )
 
+@api_factura.route("/detalle_factura/<external>", methods=["GET"])
+@token_required
+def listLote_Producto_2(external):
+    datos_factura = facturaC.listarDetalleEspecifica(external)
+    
+    return make_response(
+        jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_factura])}),
+        200
+    )
+
     
 @api_factura.route("/detalle_factura", methods=["GET"])
 @token_required

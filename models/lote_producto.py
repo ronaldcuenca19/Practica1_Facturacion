@@ -20,7 +20,7 @@ class Lote_Producto(db.Model):
 
         nombre_lote = ""
         if self.lote:
-            nombre_lote = self.lote.id
+            nombre_lote = self.lote.fecha_produccion
         
         return  {
             'estado': self.estado,

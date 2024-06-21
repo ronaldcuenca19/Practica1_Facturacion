@@ -74,6 +74,10 @@ class FacturaControl:
     def listarDetalleFactura(self):
         return Detalle_Factura.query.all() 
     
+    def listarDetalleEspecifica(self, external):
+        factura2 = Factura().query.filter_by(external_id = external).first()
+        return Detalle_Factura.query.filter_by(id_factura = factura2.id).all() 
+    
     def actualizarTotalFactura(self, id_factura):
     # Obtener la factura a actualizar
         factura = Factura.query.filter_by(id=id_factura).first()
