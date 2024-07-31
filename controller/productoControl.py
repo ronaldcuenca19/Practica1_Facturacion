@@ -150,6 +150,9 @@ class ProductoControl:
     def listarLote_Producto_Normal(self):
         return Lote_Producto.query.filter_by(estado='Bueno').all()
     
+    def listarLote_Producto_Escodigo(self):
+        return Lote_Producto.query.filter_by(escogido=True).all()
+    
     def listarLote_Producto_Apunto(self):
         fecha_actual = datetime.now().date()
         fecha_limite_superior = fecha_actual + timedelta(days=5)

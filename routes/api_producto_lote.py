@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, make_response, request
 from controller.loteControl import LoteControl
 from controller.productoControl import ProductoControl
+from controller.surcursalControl import SucursalControl
 from flask_expects_json import expects_json
 from controller.authenticate import token_required
 from controller.utiles.errores import Errors
@@ -15,6 +16,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 api_producto_lote = Blueprint('api_producto_lote', __name__)
 loteC = LoteControl()
 productoC = ProductoControl()
+sucursalC = SucursalControl()
 
 schema_lote = {
     "type": "object",
@@ -32,6 +34,26 @@ schema_producto = {
     },
     "required": ["nombre", "precio"],
 }
+
+schema_sucursal = {
+    "type": "object",
+    "properties": {
+        "nombre": {'type': 'string'}, 
+        "longitud": {'type': 'string'}, 
+        "latitud": {'type': 'string'}, 
+    },
+    "required": ["nombre", "longitud", "latitud"],
+}
+
+schema_lote_sucursal = {
+    "type": "object",
+    "properties": {
+        "id_lote_producto": {'type': 'string'}, 
+        "id_sucursal": {'type': 'string'}, 
+    },
+    "required": ["id_lote_producto", "id_sucursal"],
+}
+
 
 schema_lote_producto = {
     "type": "object",
@@ -85,6 +107,45 @@ def create_producto():
         200,
     )
 
+@api_producto_lote.route('/lote_sucursal/save', methods=["POST"])
+@expects_json(schema_lote_sucursal)
+def create_lote_sucursal():
+    data = request.json
+    lote_sucursal_id = sucursalC.guardarSucursal_Lote (data)
+    return make_response(
+        jsonify({"msg":"OK", "code":200, "data": lote_sucursal_id}),
+        200,
+    )
+
+@api_producto_lote.route("/lote_sucursal", methods=["GET"])
+def listLote_Sucursal():
+    datos_lote_sucursal = sucursalC.listar2()
+    
+    return make_response(
+        jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_lote_sucursal])}),
+        200
+    )
+
+@api_producto_lote.route('/sucursal/save', methods=["POST"])
+@expects_json(schema_sucursal)
+def create_sucursal():
+    data = request.json
+    sucursal_id = sucursalC.guardarSucursal (data)
+    return make_response(
+        jsonify({"msg":"OK", "code":200, "data": sucursal_id}),
+        200,
+    )
+
+
+@api_producto_lote.route("/sucursal", methods=["GET"])
+def listSucursal():
+    datos_sucursal = sucursalC.listar()
+    
+    return make_response(
+        jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_sucursal])}),
+        200
+    )
+
 @api_producto_lote.route('/foto/producto', methods=["POST"])
 @token_required
 def create_foto_producto():
@@ -124,7 +185,7 @@ def create_lote_producto():
     if lote_producto_id == -2:
         error_msg = Errors.error.get(str(-8), "Unknown error")
         return make_response(
-            jsonify({"msg": "Error", "code": 401, "data": {"error": error_msg}}),
+            jsonify({"msg": "Error", "code": 400, "data": {"error": error_msg}}),
             401
         )
     elif lote_producto_id == -1:
@@ -196,6 +257,35 @@ def listProducto():
     )
 
 
+@api_producto_lote.route("/sucursal/<external>",  methods=["GET"])
+def list_sucursal_prod(external):
+    datos_prod_sucursal = sucursalC.listarProd_Sucursal(external)
+    if datos_prod_sucursal != -6:
+      return make_response(
+        jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_prod_sucursal])}),
+        200
+    )
+    else:
+      return make_response(
+        jsonify({"msg":"Error", "code":400, "data": {"error": Errors.error[str(-3)]}}),
+        400,
+        )
+
+@api_producto_lote.route("/sucursal/bajar/<external>",  methods=["GET"])
+def bajar_lote_prod(external):
+    datos_prod_sucursal = productoC.listarLote_Producto_Escogido(external)
+    if datos_prod_sucursal != -6:
+      return make_response(
+        jsonify({"msg": "OK", "code": 200}),
+        200
+    )
+    else:
+      return make_response(
+        jsonify({"msg":"Error", "code":400, "data": {"error": Errors.error[str(-3)]}}),
+        400,
+        )
+
+
 @api_producto_lote.route("/producto/<external>",  methods=["GET"])
 def list_obtener(external):
     # Aquí se obtiene el parámetro 'external' de la URL y se pasa a la función 'listarPersona'
@@ -251,6 +341,15 @@ def listProductoCaducado():
     
     return make_response(
         jsonify({"msg": "OK", "code": 200, "datos":([i.serialize2() for i in datos_productoCaducado])}),
+        200
+    )
+
+@api_producto_lote.route("/lote_producto/escogido", methods=["GET"])
+def listProductoEscodigido():
+    datos_productoEscogido = productoC.listarLote_Producto_Escodigo()
+    
+    return make_response(
+        jsonify({"msg": "OK", "code": 200, "datos":([i.serialize() for i in datos_productoEscogido])}),
         200
     )
 

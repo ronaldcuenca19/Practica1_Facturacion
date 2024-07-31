@@ -5,6 +5,7 @@ class Lote_Producto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     external_id = db.Column(db.String(60))
     estado = db.Column(Enum('Caducado', 'Bueno'))
+    escogido = db.Column(db.Boolean, default=True)
     cantidad = db.Column(db.Integer)
     fecha_caducidad = db.Column(db.Date)
     bandera = db.Column(db.Boolean, default=False)
@@ -24,6 +25,7 @@ class Lote_Producto(db.Model):
         
         return  {
             'estado': self.estado,
+            'escogido': self.escogido,
             'cantidad': self.cantidad,
             'producto': nombre_producto,
             'lote': nombre_lote,

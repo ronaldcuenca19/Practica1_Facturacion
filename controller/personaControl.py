@@ -1,5 +1,6 @@
 from models.lote_producto import Lote_Producto
 from models.lote import Lote
+from models.sucursal_lote import Sucursal_Lote
 from models.persona import Persona
 from models.rol import Rol
 from models.cuenta import Cuenta
@@ -22,19 +23,24 @@ class PersonaControl:
     def inicio_sesion(self, data):
         accountA = Cuenta.query.filter_by(correo=data["correo"]).first()
         if accountA:
-            #decrypt password
+            # Desencriptar la contraseña
             if check_password_hash(accountA.clave, data["clave"]):
-                expire_time = datetime.now() + timedelta(minutes=30)
+                expire_time = datetime.now() + timedelta(minutes=300)
                 token_payload = {
                     "external_id": accountA.external_id,
-                    "exp": expire_time.timestamp() 
+                    "exp": expire_time.timestamp()
                 }
                 print('-------------', token_payload)
                 token = jwt.encode(
                     token_payload,
                     key=current_app.config["SECRET_KEY"],
                     algorithm="HS512"
-                )    
+                )
+                
+                # Verificar si el token es null o vacío
+                if not token:
+                    return -6
+
                 person = accountA.getPerson(accountA.id_persona)
                 user_info = {
                     "token": token,
@@ -42,9 +48,10 @@ class PersonaControl:
                 }
                 return user_info
             else:
-                -6
+                return -6 # Contraseña incorrecta
         else:
-            return -6
+            return -6  # Correo no encontrado
+
         
     def archivosPerm(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in PersonaControl.ALLOWED_EXTENSIONS
@@ -123,7 +130,6 @@ class PersonaControl:
         censAUx.apellido = data.get("apellidos")
         censAUx.nombre = data.get("nombres")
         censAUx.edad = data.get("edad")
-        censAUx.estado = data.get("estado")
         censAUx.cedula = data.get("cedula")
         if not PersonaControl.validar_cedula(censAUx.cedula):
             db.session.rollback()

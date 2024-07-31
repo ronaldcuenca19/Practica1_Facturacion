@@ -64,10 +64,9 @@ schema_cliente_2 = {
         'apellidos': {'type': 'string'},
         'edad': {'type': 'string'},
         'cedula':{'type': 'string'},
-        'estado': {'type': 'string'},
         'external_id' :{'type':'string'}
     },
-    'required': ['nombres', 'apellidos', 'edad', 'cedula','estado', 'external_id']
+    'required': ['nombres', 'apellidos', 'edad', 'cedula', 'external_id']
 }
 
 @api_api.route("/login", methods=["POST"])
@@ -75,16 +74,16 @@ schema_cliente_2 = {
 def session():
     data = request.json
     id = personaC.inicio_sesion(data)
-    if (type(id)) == int:
+    if id != -6:
+        return make_response(
+                jsonify({"msg": "OK", "code": 200, "data": {"tag": id}}), 200
+            )
+    else:
         return make_response(
             jsonify(
                 {"msg": "ERROR", "code": 400, "data": {"error": Errors.error[str(id)]}}
             ),
             400,
-        )
-    else:
-        return make_response(
-            jsonify({"msg": "OK", "code": 200, "data": {"tag": id}}), 200
         )
 
 @api_api.route('/persona/save/admin', methods=["POST"])
@@ -125,7 +124,6 @@ def create_cliente():
         )
     
 @api_api.route('/persona/update/cliente', methods=["POST"])
-@token_required
 @expects_json(schema_cliente_2)
 def update_cliente():
     data = request.json
